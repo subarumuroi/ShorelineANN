@@ -7,10 +7,10 @@ Created on Mon Nov 27 14:06:53 2023
 """
 #define csv file to extract from
 
-csvFile = "/Users/s/PhD/AllRuns_SingleTime_Train.csv"
-testFile = "/Users/s/PhD/AllRuns_SingleTime_Test.csv"
-midFile = "/Users/s/PhD/avg of mid points.csv"
-testmidFile = "/Users/s/PhD/test avg of mid points.csv"
+csvFile = "C:/Users/S2996310/Subaru/AllRuns_SingleTime_Train.csv"
+testFile = "C:/Users/S2996310/Subaru/AllRuns_SingleTime_Test.csv"
+midFile = "C:/Users/S2996310/Subaru/avg of mid points.csv"
+testmidFile = "C:/Users/S2996310/Subaru/test avg of mid points.csv"
 
 Adam_learning_rate = 0.0066
 Nepochs = 2000
@@ -25,6 +25,7 @@ import matplotlib.pyplot as plt
 plt.close('all')
 
 import tensorflow as tf
+import numpy as np
 
 
 #compute skill metric
@@ -151,5 +152,6 @@ for index, row in metrics_df.iterrows():
                  xycoords='axes fraction', fontsize=10)   
 plt.show()
 
+model.save('model') 
 
 
