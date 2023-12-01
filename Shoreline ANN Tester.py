@@ -13,7 +13,7 @@ midFile = "/Users/s/PhD/avg of mid points.csv"
 testmidFile = "/Users/s/PhD/test avg of mid points.csv"
 
 Adam_learning_rate = 0.0066
-Nepochs = 200
+Nepochs = 2000
 Nneurons_Dense = 320
 activation = 'relu'
 batch = 32
