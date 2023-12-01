@@ -1,3 +1,14 @@
+# Sensitivity analysis script
+# --------------------
+# Ensure primary code has run and a .h5 extension model is available in the same directory as this script on execution.
+# What is sensitivity analysis?
+# Sensitivity analysis involves changing input parameters within certain ranges or constraints and observing how these changes to input affect the output. 
+# The product of this analysis technique is a set of input parameters are most influential on the model's predictions.
+# How to perform sensitivity analysis?
+# 1.Perturb Input: Slightly change one input parameter while keeping others constant.
+# 2. Observe Output Change: Measure how the output changes in response to this perturbation.
+# 3. Repeat for Each Input: Perform this for each input parameter to understand their individual impact.
+
 import tensorflow as tf
 import numpy as np
 from tensorflow.keras.models import load_model
