@@ -1,3 +1,15 @@
+# Gradient ascent script
+# --------------------
+# Ensure primary code has run and a .h5 extension model is available in the same directory as this script on execution.
+# What is gradaient ascent?
+# Gradient ascent is an optimisation algorithm used to find the input values that maximize a function. 
+# In the context of machine learning, it is applied to find the input that maximizes the predicted output of a model.
+# How to perform gradient ascent?
+# 1. Initialize the Input: Since your model expects a 6-dimensional input, we will start with a random 6-dimensional vector.
+# 2. Define the Gradient Ascent Loop: We will iteratively apply gradient ascent to this input vector to find the combination of inputs that maximizes the predicted output.
+# 3. Update the Input: In each iteration, we'll update the input vector based on the computed gradient.
+# 4. Constraints: If your problem has specific constraints on the input values (like ranges), you'll need to enforce these after each update.
+
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
