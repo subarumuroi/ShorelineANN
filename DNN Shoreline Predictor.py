@@ -11,12 +11,12 @@ testFile = "/Users/s/PhD/AllRuns_SingleTime_Test.csv"
 
 
 Adam_learning_rate = 0.0066
-Nepochs = 2000
-Nneurons_Dense = 320
+Nepochs = 5000
+Nneurons_Dense = 1200
 activation = 'relu'
 batch = 32
 
-verbose = 0 # 1 => display model training/prediction progress data to console or 0 => don't
+verbose = 1 # 1 => display model training/prediction progress data to console or 0 => don't
 
 DataSplit = 'random' # split of data into training and test data 'manual' => Sub's separate files; 
                      #                                           'random' => Sub's separate files are first concatenated into one data set and then split randomly
@@ -37,6 +37,8 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+from sklearn.model_selection import KFold
 
 
 # Set random seed
@@ -98,7 +100,7 @@ dropid = window_size // 2 # divides window_size by 2 and returns the quotient ro
 
 y_train_smooth = SmoothData(y_train,window_size,'gaussian',std_dev=std_dev)
 y_test_smooth = SmoothData(y_test,window_size,'gaussian',std_dev=std_dev)
-
+'''
 #Plot raw vs smooth comparison
 idx = 10 # test sample shoreline profile to plot raw vs smoothed
 
@@ -120,7 +122,7 @@ axs[1].set_title('Test Data Sample')
 axs[1].legend()
 
 plt.show()
-
+'''
 #Drop edges from alongshore profile coordinates that are lost due to the moving widnow smoothing
 y_alongshore = y_alongshore[dropid:-dropid] 
 
@@ -145,8 +147,9 @@ test_metrics = {'Model': [], 'MAE': [], 'MSE': [], 'R2': []}
 
 
 
-
-
+######################3
+##Pick one of the 3 models below to execute: Neural network, Gaussian Process Regressor, or Decision Tree
+##Default set to NN but other models also work 
 
 ##took neural net from other here
 
@@ -154,7 +157,7 @@ model = tf.keras.models.Sequential([
     tf.keras.layers.Input(shape=(6,)),  #input layer with 6var
     tf.keras.layers.Dense(Nneurons_Dense, activation=activation),
     tf.keras.layers.Dense(Nneurons_Dense, activation=activation),
-    #tf.keras.layers.Dense(Nneurons_Dense, activation=activation),
+    tf.keras.layers.Dense(Nneurons_Dense, activation=activation),
     #tf.keras.layers.Dense(Nneurons_Dense, activation='tanh'),
     tf.keras.layers.Dense(51)  #output layer with 1var
 ])
@@ -174,42 +177,16 @@ fit=model.fit(x_train_scaled, y_train, epochs=Nepochs, batch_size=batch, verbose
 
 
 
-model_name = 'Neural Net'
-#nerual net ends here
+model_name = 'Deep Neural Net 2-layer'
 
 
-
-
-'''
-#Train the model
-model_name = 'GaussianProcessRegressor'
-model=GaussianProcessRegressor(random_state=42)
-fit = model.fit(x_train_scaled, y_train)
-
-'''
-
-
-
-#Get model predictions
-# Predictions on training set
-y_train_pred = model.predict(x_train_scaled)
-
-# Predictions on testing set
-y_test_pred = model.predict(x_test_scaled)
-
-
-
-
-
-
-
-# convert the history to a dataframe for plotting 
+# convert the history to a dataframe for plotting  (ONLY FOR NN)
 history_dropout_df = pd.DataFrame.from_dict(fit.history)
 
 
 # Plot the loss and accuracy from the training process
 fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-fig.suptitle('NN Dropout Model')
+fig.suptitle('Neural Network Model')
 
 # Plot Loss
 axes[0].set_ylim(0, 10)
@@ -236,7 +213,53 @@ plt.legend()
 # Show the combined plots
 plt.show()
 
+#nerual net ends here
 
+
+
+
+'''
+#Train the model
+model_name = 'GaussianProcessRegressor'
+model=GaussianProcessRegressor(random_state=42)
+fit = model.fit(x_train_scaled, y_train)
+
+'''
+
+'''
+from sklearn.tree import DecisionTreeRegressor
+
+model_name = 'DecisionTreeRegressor'
+model = DecisionTreeRegressor(random_state=42)
+fit = model.fit(x_train_scaled, y_train)
+'''
+'''
+from sklearn.ensemble import RandomForestRegressor
+
+model_name = 'RandomForestRegressor'
+# Initialize the Random Forest Regressor with desired parameters
+model = RandomForestRegressor(n_estimators=1000, random_state=42)
+fit = model.fit(x_train_scaled, y_train)
+'''
+'''
+from sklearn.neighbors import KNeighborsRegressor
+
+model_name = 'KNeighborsRegressor'
+# Initialize the KNN Regressor with desired parameters
+model = KNeighborsRegressor(n_neighbors=1)  # You can adjust the number of neighbors
+fit = model.fit(x_train_scaled, y_train)
+'''
+
+
+##############################################
+
+
+#Get model predictions 
+# Predictions on training set
+y_train_pred = model.predict(x_train_scaled)
+
+# Predictions on testing set
+y_test_pred = model.predict(x_test_scaled)
 
 
 
@@ -269,8 +292,8 @@ def plot_actual_vs_predicted(ax, y_actual, y_pred, model_name, set_type, metrics
     
     ax.scatter(y_actual, y_pred, s=20, alpha=0.6, label=set_type)
     ax.set_title(f'{model_name}')
-    ax.set_xlabel('Actual')
-    ax.set_ylabel('Predicted')
+    ax.set_xlabel('Actual Shoreline Change (m)')
+    ax.set_ylabel('Predicted Shoreline Change (m)')
     ax.set_aspect('equal', adjustable='box')  # Set aspect ratio to make axes square
     ax.set_xlim([min(y_actual.min().min(), y_pred.min().min()), max(y_actual.max().max(), y_pred.max().max())])
     ax.set_ylim([min(y_actual.min().min(), y_pred.min().min()), max(y_actual.max().max(), y_pred.max().max())])
@@ -482,7 +505,7 @@ def MonteCarloSampling(Nsamples, ParameterRanges, step_sizes=None):
             parameter_samples[:, i] = np.random.uniform(bounds[0], bounds[1], Nsamples)
 
     return parameter_samples
-Nsamples = 4
+Nsamples = 1
 
 ParameterRanges = {'H' : [0.5,2.5],
                    'T' : [7., 13.],
@@ -522,5 +545,114 @@ for ii in range(Nsamples):
     
     # run the model
     ModelApplication(input_dict, model, scaling_mean, scaling_std, y_alongshore)
- 
+    
+'''
+import math 
+from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping
+from sklearn.model_selection import train_test_split, GridSearchCV
 
+param_grid = {
+    'learning_rate': [0.001, 0.01, 0.1],
+    'batch_size': [16, 32, 64],
+    'epochs': [50], # Random choice, can be adjusted to experiment
+}
+
+
+from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
+
+# Function to create Keras model
+def create_model(learning_rate=0.01, batch_size=32):
+    model = tf.keras.models.Sequential([
+        tf.keras.layers.Input(shape=(6,)),
+        tf.keras.layers.Dense(Nneurons_Dense, activation=activation),
+        tf.keras.layers.Dense(Nneurons_Dense, activation=activation),
+        tf.keras.layers.Dense(Nneurons_Dense, activation=activation),
+        tf.keras.layers.Dense(51)
+    ])
+    opt = tf.keras.optimizers.legacy.Adam(learning_rate=learning_rate, clipnorm=1)
+    model.compile(optimizer=opt, loss='mean_squared_error', metrics=['accuracy'])
+    return model
+
+# Create KerasRegressor
+keras_wrapper = KerasRegressor(build_fn=create_model, verbose=0)
+
+# Define parameters for grid search
+
+param_grid = {
+    'learning_rate': [0.005,0.0075, 0.01],
+    'batch_size': [16, 32, 64],
+    'epochs': [1000, 2000, 3000]  # You can adjust the number of epochs as needed
+}
+
+# Perform grid search
+grid_search = GridSearchCV(estimator=keras_wrapper, param_grid=param_grid, cv=3, scoring='neg_mean_squared_error')
+grid_result = grid_search.fit(x_train_scaled, y_train)
+
+# Get best parameters
+best_learning_rate = grid_result.best_params_['learning_rate']
+best_batch_size = grid_result.best_params_['batch_size']
+best_epochs = grid_result.best_params_['epochs']
+
+# Train the best model
+best_model = create_model(learning_rate=best_learning_rate, batch_size=best_batch_size)
+best_model.fit(x_train_scaled, y_train, epochs=best_epochs, batch_size=best_batch_size, verbose=verbose, validation_data=(x_test_scaled, y_test), callbacks=[early_stopping])
+
+# Evaluate the best model
+test_loss, test_accuracy = best_model.evaluate(x_test_scaled, y_test)
+print("Test Loss:", test_loss)
+print("Test Accuracy:", test_accuracy)
+
+
+# Learning rate scheduler function
+def lr_scheduler(epoch, lr):
+    return lr * math.exp(-0.1)  # You can adjust the decay rate to test different convergence rates
+
+# Create a LearningRateScheduler callback
+# Note: A 'callback' essentially allows specification of certain model 'behaviour' at particular points in training
+lr_callback = LearningRateScheduler(lr_scheduler)
+
+# Early stopping callback
+early_stopping_callback = EarlyStopping(
+    monitor='val_loss',  
+    patience=10,  # This is the of epochs with no improvement after which training will be stopped
+    restore_best_weights=True  # Restore the best model weights
+)
+
+# Train model with the optimal learning rate, batch size, learning rate scheduler, and early stopping
+history = best_model.fit(
+    x_train_scaled, y_train,
+    epochs=50,  # Adjust the number of epochs as needed
+    batch_size=best_batch_size,
+    validation_data=(x_test_scaled, y_test),  # Use the test set for validation
+    callbacks=[lr_callback, early_stopping_callback]
+)
+
+# Plot the learning rate range test results (loss vs. learning rate)
+learning_rates = [10 ** i for i in range(-5, 0)]  # A likely range of learning rates (would not expect 10e-6 or lower)
+losses = []
+
+for lr in learning_rates:
+    model = model(learning_rate=lr, batch_size=best_batch_size)
+    history = model.fit(
+        x_train_scaled, y_train,
+        epochs=2000,  # I have used a small epoch size. Your speedy Mac could probably handle more :)
+        batch_size=best_batch_size,
+        validation_data=(x_test_scaled, y_test),
+        verbose=1
+    )
+    losses.append(history.history['val_loss'][-1])
+
+plt.semilogx(learning_rates, losses, marker='o')
+plt.title('Learning Rate Range Test')
+plt.xlabel('Learning Rate (log scale)')
+plt.ylabel('Validation Loss')
+plt.grid(True)
+plt.show()
+
+# Final eval, printing best params
+y_pred = best_model.predict(x_test_scaled)
+mse = mean_squared_error(y_test, y_pred)
+print(f'Best Learning Rate: {best_learning_rate}')
+print(f'Best Batch Size: {best_batch_size}')
+print(f'Mean Squared Error on Test Data: {mse}')
+'''

@@ -1,6 +1,8 @@
 # ShorelineANN
 
-Neural net for learning shoreline model output.
+Neural net and Gaussian Process Regressor methods for learning shoreline model outputs.
+
+Multitester compares models of various types on the same data.
 
 various other methods are available for the group to share and test ideas of the experimental approach.
 

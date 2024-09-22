@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Created on Tue Apr 16 16:49:04 2024
+
+@author: s
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 Created on Tue Dec  5 14:25:49 2023
 
 @author: s
@@ -18,25 +26,20 @@ batch = 32
 
 verbose = 0 # 1 => display model training/prediction progress data to console or 0 => don't
 
-DataSplit = 'random' # split of data into training and test data 'manual' => Sub's separate files; 
-                     #                                           'random' => Sub's separate files are first concatenated into one data set and then split randomly
 
 import numpy as np
 import pandas as pd
-
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 from scipy.stats import norm
 
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.gaussian_process import GaussianProcessRegressor
-
+from sklearn.gaussian_process.kernels import Matern
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 # Set random seed
@@ -146,9 +149,9 @@ test_metrics = {'Model': [], 'MAE': [], 'MSE': [], 'R2': []}
 
 
 
+'''
 
-
-##took neural net from other here
+##NEURAL NETWORK DESIGN VARIABLES AT TOP
 
 model = tf.keras.models.Sequential([
     tf.keras.layers.Input(shape=(6,)),  #input layer with 6var
@@ -173,34 +176,7 @@ early_stopping = EarlyStopping(monitor='val_loss',  # Monitor the validation los
 fit=model.fit(x_train_scaled, y_train, epochs=Nepochs, batch_size=batch, verbose=verbose, validation_data=(x_test_scaled, y_test), callbacks = [early_stopping])
 
 
-
-model_name = 'Neural Net'
-#nerual net ends here
-
-
-
-
-'''
-#Train the model
-model_name = 'GaussianProcessRegressor'
-model=GaussianProcessRegressor(random_state=42)
-fit = model.fit(x_train_scaled, y_train)
-
-'''
-
-
-
-#Get model predictions
-# Predictions on training set
-y_train_pred = model.predict(x_train_scaled)
-
-# Predictions on testing set
-y_test_pred = model.predict(x_test_scaled)
-
-
-
-
-
+model_name = 'Neural Network Model'
 
 
 # convert the history to a dataframe for plotting 
@@ -209,7 +185,7 @@ history_dropout_df = pd.DataFrame.from_dict(fit.history)
 
 # Plot the loss and accuracy from the training process
 fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-fig.suptitle('NN Dropout Model')
+fig.suptitle('DNN Model')
 
 # Plot Loss
 axes[0].set_ylim(0, 10)
@@ -237,6 +213,33 @@ plt.legend()
 plt.show()
 
 
+#nerual net ends here
+'''
+###load best nn model
+'''
+from tensorflow.keras.models import load_model
+
+# Load the model
+model = load_model('model_NN_best.h5')
+'''
+
+
+
+#Train the GPR model
+model_name = 'GaussianProcessRegressor'
+model=GaussianProcessRegressor(alpha = 1e-7, kernel = Matern(nu=0.8), random_state=42)
+fit = model.fit(x_train_scaled, y_train)
+#end GPR model
+
+
+
+
+#Get model predictions
+# Predictions on training set
+y_train_pred = model.predict(x_train_scaled)
+
+# Predictions on testing set
+y_test_pred = model.predict(x_test_scaled)
 
 
 
@@ -269,8 +272,8 @@ def plot_actual_vs_predicted(ax, y_actual, y_pred, model_name, set_type, metrics
     
     ax.scatter(y_actual, y_pred, s=20, alpha=0.6, label=set_type)
     ax.set_title(f'{model_name}')
-    ax.set_xlabel('Actual')
-    ax.set_ylabel('Predicted')
+    ax.set_xlabel('Actual Shoreline Change (m)')
+    ax.set_ylabel('Predicted Shoreline Change (m)')
     ax.set_aspect('equal', adjustable='box')  # Set aspect ratio to make axes square
     ax.set_xlim([min(y_actual.min().min(), y_pred.min().min()), max(y_actual.max().max(), y_pred.max().max())])
     ax.set_ylim([min(y_actual.min().min(), y_pred.min().min()), max(y_actual.max().max(), y_pred.max().max())])
@@ -405,10 +408,10 @@ def checkInputValidity(input_dict):
     return data_ok, out_of_bounds_keys
 
 
-def ModelApplication(input_dict, model, scaling_mean, scaling_std, y_alongshore):
 
+def ModelApplication(input_dict, model, scaling_mean, scaling_std, y_alongshore, avg_value, avg_params, max_value, max_params, min_value, min_params):
     # check if input data is within bounds of model parameter range
-    data_ok, out_of_bounds_keys=checkInputValidity(input_dict)
+    data_ok, _ = checkInputValidity(input_dict)
     
     if data_ok:
         X_input = [list(input_dict.values())]    
@@ -416,47 +419,47 @@ def ModelApplication(input_dict, model, scaling_mean, scaling_std, y_alongshore)
         # Scale the provided input using the model's scaling parameters
         X_input_scaled = (X_input - scaling_mean) / scaling_std
 
-        # run mode for the test sample
+        # Run model for the test sample
         y_pred = model.predict(X_input_scaled)
-        # get the actual test sample data
-        y_actual = y_test.iloc[test_index].values
-    
-        # add the current test sample to the model scatter plot from above
-        fig, ax = plt.subplots(1, 1)#, figsize=(15, 9))
-        plot_title = ', '.join([f"{key}={value}" for key, value in input_dict.items()])
-    
-        # plot the shoreline profile
-        ax.plot(y_alongshore,y_pred.T,color='r', label='Predicted')
-        ax.set_xlabel('Alongshore position of transect (m)')
-        ax.set_ylabel('Crosshore position of shoreline (m)')
-        ax.set_title(plot_title)
-        ax.grid(True)
-        ax.legend()
-        fig.tight_layout()
+
+        # Average the predicted values
+        #avg_pred = np.mean(y_pred)
         
-    else:
-        print('  *** ERROR *** \n The following input parameters are out of model range: '+','.join(out_of_bounds_keys) + '\n Refer to checkInputValidity(input_dict) function for min and max values for each parameter.')
+       
+        avg_pred =  np.sum(np.abs(y_pred))
+
+
+        # Check if the current prediction is the highest
+        if avg_pred < avg_value:
+            avg_value = avg_pred
+            avg_params = input_dict.copy()
+        
+        
+        
+        # Find the maximum value within the series of 51 values
+        max_series_value = np.max(y_pred)
+        
+        #check if current prediction is the largest (causes most accretion)
+        if max_series_value > max_value:
+            max_value = max_series_value
+            max_params = input_dict.copy()
+            
+            
+            
+        # Find the minimum value within the seris of 51 values    
+        min_series_value = np.min(y_pred)
+        # Check if the 26th value of the series is positive
+        if y_pred[0][25] > 0:  # Assuming y_pred is a 2D array with shape (1, 51)
+            # Check if the current prediction is the largest (causes the least erosion)
+            if min_series_value > min_value:
+                min_value = min_series_value
+                min_params = input_dict.copy()
+       
     
-    return
-
-#Define model input parameters
-# input dict
-input_dict = {'H' : 1.0,
-           'T' : 11.,
-           'Dir' : 180., 
-           'Dist' : 300.,
-           'L' : 200.,
-           'W' : 25.,
-           }
-
-#Run the model
-ModelApplication(input_dict, model, scaling_mean, scaling_std, y_alongshore)
-
-#Monte Carlo Sampling
+    return avg_value, avg_params, max_value, max_params, min_value, min_params
 
 
-#*** need to think more about usage and aim of this?
-import numpy as np
+
 
 def MonteCarloSampling(Nsamples, ParameterRanges, step_sizes=None):
     """
@@ -482,7 +485,10 @@ def MonteCarloSampling(Nsamples, ParameterRanges, step_sizes=None):
             parameter_samples[:, i] = np.random.uniform(bounds[0], bounds[1], Nsamples)
 
     return parameter_samples
-Nsamples = 4
+
+
+
+Nsamples = 10000
 
 ParameterRanges = {'H' : [0.5,2.5],
                    'T' : [7., 13.],
@@ -495,32 +501,60 @@ ParameterRanges = {'H' : [0.5,2.5],
 # sampling intervals, the random samples are rounded to the nearest step size
 step_sizes = {
     'H': 0.1,
-    'T': 0.5,
+    'T': 0.1,
     'Dir': 1.0,
-    'Dist': 20,
-    'L': 50,
+    'Dist': 5,
+    'L': 5,
     'W': 5,
 }
 
 # Perform Monte Carlo sampling with step sizes
 ParameterSamples = MonteCarloSampling(Nsamples, ParameterRanges, step_sizes)
 
-# display output - comment out to suppress
-print('    H,    T,   Dir, Dist,  L,    W')
-print('   ----------------------------------')
-print(ParameterSamples)
-#Run model using monte carlo samples
+# Define the values of 'H' and 'T' that you want to hold constant
+constant_H = 1.5
+constant_T = 10
+
+
+# Initialize variables to keep track of the highest and lowest values and their corresponding parameters
+avg_value = float('inf')
+avg_params = {}
+max_value = -float('inf')
+max_params = {}
+min_value = -float('inf')
+min_params = {}
+
+# Iterate through samples
 for ii in range(Nsamples):
-    # define input_dict for current sample set
-    input_dict = {'H' : np.round(ParameterSamples[ii,0],1),
-                  'T' : np.round(ParameterSamples[ii,1],1),
+    # Define input_dict for current sample set
+    input_dict = {'H' : constant_H, #np.round(ParameterSamples[ii,0],1),
+                  'T' : constant_T, #np.round(ParameterSamples[ii,1],1),
                   'Dir' : np.round(ParameterSamples[ii,2],0), 
                   'Dist' : np.round(ParameterSamples[ii,3],0),
                   'L' : np.round(ParameterSamples[ii,4],0),
                   'W' : np.round(ParameterSamples[ii,5],0),
-                  }
+                 }
+
+
+
+    avg_value, avg_params, max_value, max_params, min_value, min_params = ModelApplication(input_dict, model, scaling_mean, scaling_std, y_alongshore, avg_value, avg_params, max_value, max_params, min_value, min_params)
+
+# Print the samples with highest average sediment change
+print("Sample with the minimum absolute change")
+print(avg_params)
+print("Predicted value:", avg_value)
     
-    # run the model
-    ModelApplication(input_dict, model, scaling_mean, scaling_std, y_alongshore)
- 
+# Print the sample with the highest predicted value
+print("\nSample with the highest predicted value:")
+print(max_params)
+print("Predicted value:", max_value)
+
+# Print the sample with the lowest predicted value within the series of 51 values
+print("\nSample with the lowest predicted value within the series of 51 values:")
+print(min_params)
+print("Predicted value:", min_value)
+
+
+
+
 

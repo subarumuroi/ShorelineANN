@@ -1,7 +1,7 @@
-csvFile = "C:/Users/S2996310/Subaru/AllRuns_SingleTime_Train.csv"
-testFile = "C:/Users/S2996310/Subaru/AllRuns_SingleTime_Test.csv"
-midFile = "C:/Users/S2996310/Subaru/avg of mid points.csv"
-testmidFile = "C:/Users/S2996310/Subaru/test avg of mid points.csv"
+csvFile = "/Users/s/PhD/AllRuns_SingleTime_Train.csv"
+testFile = "/Users/s/PhD/AllRuns_SingleTime_Test.csv"
+midFile = "/Users/s/PhD/avg of mid points.csv"
+testmidFile = "/Users/s/PhD/test avg of mid points.csv"
 
 Adam_learning_rate = 0.0066
 Nepochs = 2000
@@ -190,6 +190,6 @@ mean_score0 = np.mean(scores, axis = 0)
 mean_score1 = np.mean(scores, axis = 1)
 mean_score = np.mean(scores)
     
-mean_score
-mean_score1
-mean_score
+print(mean_score)
+print(mean_score1)
+print(mean_score)
